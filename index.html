@@ -144,21 +144,30 @@ function App(){
 
   function loadData(){
     setLoading(true);setError(null);
-    var proxy="https://api.allorigins.win/get?url="+encodeURIComponent(CSV_URL);
-    fetch(proxy)
-      .then(function(r){return r.json();})
-      .then(function(data){
-        var text=data.contents;
-        var rows=parseCSV(text);
-        var m=buildMenu(rows);
-        setMenu(m);
-        setSelected(m.length>0&&m[0].items.length>0?m[0].items[0]:null);
+    var proxies=[
+      "https://corsproxy.io/?"+encodeURIComponent(CSV_URL),
+      "https://api.allorigins.win/raw?url="+encodeURIComponent(CSV_URL)
+    ];
+    function tryFetch(i){
+      if(i>=proxies.length){
+        setError("데이터를 불러오지 못했습니다. 시트 공유 설정을 확인해 주세요.");
         setLoading(false);
-      })
-      .catch(function(e){
-        setError("데이터를 불러오지 못했습니다.");
-        setLoading(false);
-      });
+        return;
+      }
+      fetch(proxies[i])
+        .then(function(r){if(!r.ok)throw new Error("fail");return r.text();})
+        .then(function(text){
+          if(!text||text.length<5)throw new Error("empty");
+          var rows=parseCSV(text);
+          if(rows.length===0)throw new Error("norows");
+          var m=buildMenu(rows);
+          setMenu(m);
+          setSelected(m.length>0&&m[0].items.length>0?m[0].items[0]:null);
+          setLoading(false);
+        })
+        .catch(function(){tryFetch(i+1);});
+    }
+    tryFetch(0);
   }
 
   React.useEffect(function(){loadData();},[]);
