@@ -144,9 +144,11 @@ function App(){
 
   function loadData(){
     setLoading(true);setError(null);
-    fetch(CSV_URL)
-      .then(function(r){return r.text();})
-      .then(function(text){
+    var proxy="https://api.allorigins.win/get?url="+encodeURIComponent(CSV_URL);
+    fetch(proxy)
+      .then(function(r){return r.json();})
+      .then(function(data){
+        var text=data.contents;
         var rows=parseCSV(text);
         var m=buildMenu(rows);
         setMenu(m);
